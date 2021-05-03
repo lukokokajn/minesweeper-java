@@ -1,13 +1,30 @@
 package cz.educanet.minesweeper.logic;
 
+import java.util.Random;
+
 public class Minesweeper {
 
     private int rowsCount;
     private int columnsCount;
+    private boolean bombs[][];
+    private int fields[][];
 
     public Minesweeper(int rows, int columns) {
         this.rowsCount = rows;
         this.columnsCount = columns;
+        this.bombs = new boolean[rows][columns];
+        this.fields = new int[rows][columns];
+        Random random = new Random();
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                fields[i][j] = 0; //hidden
+                if (random.nextInt(100) > 80) {
+                    bombs[i][j] = true;
+                } else {
+                    bombs[i][j] = false;
+                }
+            }
+        }
     }
 
     /**
@@ -21,7 +38,7 @@ public class Minesweeper {
      * @return field type
      */
     public int getField(int x, int y) {
-        return 0;
+        return this.fields[y][x];
     }
 
     /**
@@ -34,7 +51,17 @@ public class Minesweeper {
      * @param x X
      * @param y Y
      */
+
     public void toggleFieldState(int x, int y) {
+        if (fields[y][x] == 0) {
+            fields[y][x] = 2;
+        } else {
+            fields[y][x] = fields[x][y] + 1;
+            if (fields[y][x] == 4) {
+                fields[y][x] = 0;
+            }
+        }
+        System.out.println("Toggle Reveal");
     }
 
     /**
@@ -44,6 +71,21 @@ public class Minesweeper {
      * @param y Y
      */
     public void reveal(int x, int y) {
+        if (x >= 0 && y >= 0 && x < columnsCount && y < rowsCount) {
+            if (fields[y][x] == 0) {
+                fields[y][x] = 1;
+                if (getAdjacentBombCount(x, y) == 0) {
+                    reveal(x - 1, y - 1);
+                    reveal(x, y - 1);
+                    reveal(x + 1, y - 1);
+                    reveal(x - 1, y);
+                    reveal(x + 1, y);
+                    reveal(x - 1, y + 1);
+                    reveal(x, y + 1);
+                    reveal(x + 1, y + 1);
+                }
+            }
+        }
     }
 
     /**
@@ -54,7 +96,48 @@ public class Minesweeper {
      * @return number of adjacent bombs
      */
     public int getAdjacentBombCount(int x, int y) {
-        return 0;
+        int bomb = 0;
+        if (x > 0) {
+            if (isBombOnPosition(x - 1, y)) {
+                bomb++;
+            }
+            if (y > 0) {
+                if (isBombOnPosition(x - 1, y - 1)) {
+                    bomb++;
+                }
+            }
+            if (y < rowsCount - 1) {
+                if (isBombOnPosition(x - 1, y + 1)) {
+                    bomb++;
+                }
+            }
+        }
+        if (x < columnsCount - 1) {
+            if (isBombOnPosition(x + 1, y)) {
+                bomb++;
+            }
+            if (y > 0) {
+                if (isBombOnPosition(x + 1, y - 1)) {
+                    bomb++;
+                }
+            }
+            if (y < rowsCount - 1) {
+                if (isBombOnPosition(x + 1, y + 1)) {
+                    bomb++;
+                }
+            }
+        }
+        if (y > 0) {
+            if (isBombOnPosition(x, y - 1)) {
+                bomb++;
+            }
+        }
+        if (y < rowsCount - 1) {
+            if (isBombOnPosition(x, y + 1)) {
+                bomb++;
+            }
+        }
+        return bomb;
     }
 
     /**
@@ -65,7 +148,7 @@ public class Minesweeper {
      * @return true if bomb on position
      */
     public boolean isBombOnPosition(int x, int y) {
-        return false;
+        return this.bombs[y][x];
     }
 
     /**
@@ -74,7 +157,15 @@ public class Minesweeper {
      * @return bomb count
      */
     public int getBombCount() {
-        return 0;
+        int a = 0;
+        for (int i = 0; i < rowsCount; i++) {
+            for (int j = 0; j < columnsCount; j++) {
+                if (isBombOnPosition(j, i)) {
+                    a++;
+                }
+            }
+        }
+        return a;
     }
 
     /**
@@ -83,7 +174,16 @@ public class Minesweeper {
      * @return remaining bomb count
      */
     public int getRemainingBombCount() {
-        return 0;
+        int flags = 0;
+        for (int i = 0; i < columnsCount; i++) {
+            for (int j = 0; j < rowsCount; j++) {
+                if (fields[i][j] == 2) {
+                    flags++;
+                }
+            }
+
+        }
+        return flags - getBombCount();
     }
 
     /**
@@ -92,7 +192,17 @@ public class Minesweeper {
      * @return if player won
      */
     public boolean didWin() {
-        return false;
+        for (int i = 0; i < rowsCount; i++) {
+            for (int j = 0; j < columnsCount; j++) {
+                if (getField(j, i) == 2 && !isBombOnPosition(j, i)) { // je vlajka ale není bomba
+                    return false;
+                }
+                if (getField(j, i) != 2 && isBombOnPosition(j, i)) { // je bomba ale není vlajka
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -101,6 +211,13 @@ public class Minesweeper {
      * @return if player lost
      */
     public boolean didLoose() {
+        for (int i = 0; i < rowsCount; i++) {
+            for (int j = 0; j < columnsCount; j++) {
+                if (isBombOnPosition(j, i) && getField(j, i) == 1) { // našli jsme bombu
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
